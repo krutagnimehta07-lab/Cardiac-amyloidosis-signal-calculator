@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ATTR Wild-Type Amyloidosis Risk Score — NIS Heart-Failure Discharges</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#E9EDF0; --bg2:#DFE5E9; --paper:#FFFFFF; --line:#D2DAE0; --line2:#E4EAEE;
+    --ink:#13202B; --ink2:#3C4A55; --muted:#6B7884; --faint:#97A3AD;
+    --readout:#0C1620; --readout2:#13212E; --readline:#22323F;
+    /* Congo red stain + apple-green birefringence */
+    --congo:#A8313D; --congo-d:#7E2129; --congo-soft:#F6E3E4;
+    --apple:#7BA23A; --apple-d:#5A7A26; --apple-soft:#EAF2DC;
+    --wt:#2F6DB5; --wt-soft:#E2ECF7;
+    --sev:#C2802C; --ok:#3E8E6E;
+    --r:14px; --rs:10px;
+    --shadow:0 1px 2px rgba(20,32,43,.06),0 8px 24px rgba(20,32,43,.06);
+    --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+    --disp:Archivo,'Helvetica Neue',Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+  body{margin:0;background:radial-gradient(900px 500px at 85% -10%,#EEF2F5 0%,transparent 60%),var(--bg);
+    color:var(--ink);font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;line-height:1.5}
+  .wrap{max-width:1280px;margin:0 auto;padding:0 22px 80px}
+  header{padding:30px 0 14px}
+  .eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--congo);font-weight:600;display:flex;gap:10px;align-items:center}
+  .eyebrow::before{content:"";width:26px;height:1px;background:var(--congo)}
+  h1{font-family:var(--disp);font-weight:800;letter-spacing:-.02em;font-size:clamp(28px,4.4vw,46px);line-height:1.04;margin:14px 0 0;max-width:900px}
+  h1 .thin{font-weight:500;color:var(--ink2)}
+  .sub{color:var(--ink2);max-width:780px;margin:12px 0 0;font-size:15.5px}
+  .fibril{height:40px;margin:16px 0 2px;width:100%;display:block}
+  .fibril path{fill:none;stroke-width:2;stroke-dasharray:1600;stroke-dashoffset:1600;animation:trace 3s ease-out .2s forwards}
+  @keyframes trace{to{stroke-dashoffset:0}}
+  @media (prefers-reduced-motion:reduce){.fibril path{animation:none;stroke-dashoffset:0}}
+  .badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .badge{font-family:var(--mono);font-size:11.5px;background:var(--paper);border:1px solid var(--line);
+    border-radius:999px;padding:6px 12px;color:var(--ink2);display:inline-flex;gap:7px;align-items:center;box-shadow:var(--shadow)}
+  .badge b{color:var(--ink);font-weight:600}
+  .dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+
+  .grid{display:grid;grid-template-columns:1fr 440px;gap:22px;margin-top:24px;align-items:start}
+  @media(max-width:1000px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+  .card+.card{margin-top:18px}
+  .card-h{padding:15px 18px;border-bottom:1px solid var(--line2);display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .card-h h2{font-family:var(--disp);font-weight:700;font-size:15px;margin:0;letter-spacing:-.01em}
+  .card-h .num{font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.12em}
+  .group{padding:16px 18px;border-bottom:1px solid var(--line2)}
+  .group:last-child{border-bottom:0}
+  .group-h{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);
+    font-weight:600;margin:0 0 12px;display:flex;align-items:center;gap:9px}
+  .group-h .ix{color:var(--faint)}
+  .group-note{font-size:12.5px;color:var(--muted);margin:-4px 0 12px}
+
+  /* model switch */
+  .switch{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .mbtn{border:1.5px solid var(--line);background:var(--paper);border-radius:var(--rs);padding:11px 13px;text-align:left;cursor:pointer;font-family:inherit;color:var(--ink)}
+  .mbtn b{display:block;font-family:var(--disp);font-size:14.5px}
+  .mbtn span{font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .mbtn[aria-pressed="true"]{border-color:var(--congo);background:var(--congo-soft)}
+  .mbtn[data-m="wt"][aria-pressed="true"]{border-color:var(--wt);background:var(--wt-soft)}
+
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--bg2);flex-wrap:wrap}
+  .seg button{border:0;background:transparent;padding:6px 13px;border-radius:999px;font-size:13px;cursor:pointer;font-weight:500;font-family:inherit;color:var(--ink2)}
+  .seg button[aria-pressed="true"]{background:var(--paper);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+  .row{display:flex;align-items:center;gap:14px;margin-bottom:12px;flex-wrap:wrap}
+  .row:last-child{margin-bottom:0}
+  .row label.lab{width:92px;font-size:13.5px;color:var(--ink2);font-weight:500}
+  select{font-family:inherit;font-size:13.5px;padding:7px 10px;border-radius:8px;border:1px solid var(--line);background:var(--paper);color:var(--ink)}
+
+  .chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}
+  .chip{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid var(--line);
+    background:var(--paper);border-radius:var(--rs);padding:9px 11px;cursor:pointer;font-family:inherit;font-size:13.5px;color:var(--ink);text-align:left}
+  .chip:hover{border-color:#B9C4CC}
+  .chip .or{font-family:var(--mono);font-size:11.5px;color:var(--muted);white-space:nowrap}
+  .chip[aria-pressed="true"]{border-color:var(--congo);background:var(--congo-soft)}
+  .chip[aria-pressed="true"] .or{color:var(--congo-d);font-weight:600}
+  .chip.ns{border-style:dashed}
+  .chip.ns .or{color:var(--faint)}
+  .chip.ne{opacity:.5;cursor:not-allowed}
+  .chip.redflag::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--apple);flex:none;margin-right:-2px}
+  .chip .t{flex:1}
+
+  .tools{display:flex;gap:8px;flex-wrap:wrap}
+  .tbtn{font-family:var(--mono);font-size:11.5px;border:1px solid var(--line);background:var(--paper);border-radius:8px;padding:7px 11px;cursor:pointer;color:var(--ink2)}
+  .tbtn:hover{border-color:var(--congo);color:var(--congo-d)}
+  button:focus-visible,select:focus-visible{outline:2px solid var(--wt);outline-offset:2px}
+
+  /* readout */
+  .screen{background:var(--readout);color:#E6EDF2;border-radius:var(--r);box-shadow:0 10px 40px rgba(8,18,28,.35);
+    position:sticky;top:16px;overflow:hidden;border:1px solid #1B2A36}
+  @media(max-width:1000px){.screen{position:static}}
+  .screen-h{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--readline)}
+  .screen-h h2{font-family:var(--disp);font-size:13.5px;font-weight:700;margin:0;color:#fff}
+  .screen-h .live{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:#8FC25A;display:flex;align-items:center;gap:6px}
+  .screen-h .live::before{content:"";width:6px;height:6px;border-radius:50%;background:#8FC25A}
+  .sec{padding:16px 18px;border-bottom:1px solid var(--readline)}
+  .sec:last-child{border-bottom:0}
+  .sec h3{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#8FA3AF;font-weight:600;margin:0 0 10px}
+  .bigrow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .big{background:var(--readout2);border:1px solid var(--readline);border-radius:var(--rs);padding:13px}
+  .big .k{font-family:var(--mono);font-size:10.5px;color:#8FA3AF;letter-spacing:.06em}
+  .big .v{font-family:var(--mono);font-weight:600;font-size:30px;line-height:1.1;margin-top:4px;color:#fff}
+  .big .ci{font-family:var(--mono);font-size:11px;color:#9FB2BD;margin-top:3px}
+  .tier{margin-top:12px;display:flex;align-items:center;gap:10px;font-family:var(--disp);font-weight:700;font-size:14px}
+  .tierbar{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:10px}
+  .tierbar i{height:6px;border-radius:3px;background:#22323F}
+  .tierbar i.on{background:var(--tc,#8FC25A)}
+  .tierlab{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;font-family:var(--mono);font-size:9.5px;color:#7F929E;margin-top:4px}
+  .flags{display:flex;gap:5px;margin-top:2px}
+  .flags i{width:22px;height:22px;border-radius:6px;background:#1A2A37;border:1px solid var(--readline)}
+  .flags i.on{background:var(--apple);border-color:var(--apple)}
+  .flagtxt{font-size:12.5px;color:#B8C6CF;margin-top:8px}
+  .drv-row{display:grid;grid-template-columns:1fr 120px 52px;gap:10px;align-items:center;font-size:12.5px;margin:6px 0;color:#D5DFE5}
+  .drv-row .bar{height:7px;background:#1A2A37;border-radius:4px;position:relative;overflow:hidden}
+  .drv-row .bar span{position:absolute;top:0;bottom:0;border-radius:4px}
+  .drv-row .dv{font-family:var(--mono);font-size:11px;color:#9FB2BD;text-align:right}
+  .empty{font-size:12.5px;color:#8FA3AF}
+  .warn{font-size:12px;color:#F0C987;background:rgba(194,128,44,.12);border:1px solid rgba(194,128,44,.35);border-radius:8px;padding:8px 10px;margin-top:10px;display:none}
+  .summary p{font-size:13px;color:#D5DFE5;margin:0}
+  .copybtn{margin-top:12px;font-family:var(--mono);font-size:11px;background:transparent;border:1px solid #3A4C5A;color:#D5DFE5;border-radius:8px;padding:7px 11px;cursor:pointer}
+  .disc{font-size:11.5px;color:#8FA3AF;padding:14px 18px;background:#09121A}
+  .disc b{color:#D5DFE5}
+
+  /* forest */
+  .forest-wrap{overflow-x:auto;padding:8px 10px 14px}
+  .forest{min-width:720px;width:100%;display:block}
+  .forest text{font-family:Inter,system-ui,sans-serif;font-size:12px;fill:var(--ink2)}
+  .forest .mono{font-family:var(--mono);font-size:10.5px;fill:var(--muted)}
+  .forest .present{fill:var(--congo-d);font-weight:600}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--ink2);padding:0 18px 14px}
+  .legend span{display:inline-flex;align-items:center;gap:7px}
+
+  table{border-collapse:collapse;width:100%;font-size:13px}
+  th,td{padding:8px 12px;border-bottom:1px solid var(--line2);text-align:left}
+  th{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;background:#F6F8F9}
+  td.n,th.n{text-align:right;font-family:var(--mono)}
+  .tablewrap{overflow-x:auto}
+  details.notes{margin-top:18px}
+  details.notes summary{padding:16px 18px;cursor:pointer;font-family:var(--disp);font-weight:700;font-size:15px;list-style:none;display:flex;justify-content:space-between}
+  details.notes summary::-webkit-details-marker{display:none}
+  details.notes summary::after{content:"+";font-family:var(--mono);color:var(--muted);font-size:18px}
+  details[open].notes summary::after{content:"–"}
+  .notes-b{padding:0 18px 18px;font-size:13.5px;color:var(--ink2);max-width:880px}
+  .notes-b h4{font-family:var(--disp);font-size:13.5px;color:var(--ink);margin:18px 0 6px}
+  .notes-b code{font-family:var(--mono);background:var(--bg2);padding:1px 5px;border-radius:4px;font-size:12px}
+  .notes-b li{margin:4px 0}
+  footer{margin-top:28px;font-size:12px;color:var(--muted);text-align:center}
+  @media print{
+    body{background:#fff}.tools,.copybtn,.mbtn span{display:none}
+    .screen{position:static;box-shadow:none}.grid{grid-template-columns:1fr}
+    details.notes{display:block}details.notes .notes-b{display:block}
+  }
+</style>
+<style>
+  .seg-num{display:flex;align-items:center;gap:10px}
+  .seg-num input[type=number]{width:70px;font-family:var(--mono);font-size:14px;padding:6px 8px;border:1px solid var(--line);border-radius:8px}
+  .bandbar{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:12px}
+  .bandbar i{height:7px;border-radius:3px;background:#22323F}
+  .bandlab{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;font-family:var(--mono);font-size:9.5px;color:#7F929E;margin-top:5px}
+  .perf{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:16px 18px}
+  @media(max-width:700px){.perf{grid-template-columns:repeat(2,1fr)}}
+  .pf{border:1px solid var(--line2);border-radius:var(--rs);padding:12px;background:#FAFBFC}
+  .pf .k{font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+  .pf .v{font-family:var(--mono);font-size:24px;font-weight:600;margin-top:4px;color:var(--ink)}
+  .pf .s{font-size:12px;color:var(--muted);margin-top:2px}
+  .chart-wrap{padding:8px 18px 16px;overflow-x:auto}
+  .chart{width:100%;min-width:520px;display:block}
+  .chart text{font-family:Inter,system-ui,sans-serif;font-size:12px;fill:var(--ink2)}
+  .chart .mono{font-family:var(--mono);font-size:11px}
+  .lower{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:22px}
+  @media(max-width:1000px){.lower{grid-template-columns:1fr}}
+  .lower .card+.card{margin-top:0}
+  tr.on td{background:var(--congo-soft)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="eyebrow">ATTR-wt point score · NIS heart-failure discharges · E85.82</div>
+  <h1>ATTR wild-type amyloidosis <span class="thin">risk score</span></h1>
+  <p class="sub">A multivariable, NIS-derived point score for coded wild-type transthyretin amyloidosis among heart-failure hospitalizations. Enter age, sex and the coded features present during the admission to see the total score, its risk band and the observed ATTR-wt rate in that band.</p>
+  <svg class="fibril" viewBox="0 0 1200 40" preserveAspectRatio="none" aria-hidden="true">
+    <path stroke="var(--congo)" d="M0 20 C 40 4, 80 36, 120 20 S 200 4, 240 20 S 320 36, 360 20 S 440 4, 480 20 S 560 36, 600 20 S 680 4, 720 20 S 800 36, 840 20 S 920 4, 960 20 S 1040 36, 1080 20 S 1160 4, 1200 20"/>
+    <path stroke="var(--apple)" style="animation-delay:.5s" d="M0 20 C 40 36, 80 4, 120 20 S 200 36, 240 20 S 320 4, 360 20 S 440 36, 480 20 S 560 4, 600 20 S 680 36, 720 20 S 800 4, 840 20 S 920 36, 960 20 S 1040 4, 1080 20 S 1160 36, 1200 20"/>
+  </svg>
+  <div class="badges">
+    <span class="badge"><i class="dot" style="background:var(--congo)"></i>Points AUC <b>0.789</b></span>
+    <span class="badge">Logistic AUC <b>0.789</b></span>
+    <span class="badge">SHAP-guided <b>variable selection</b></span>
+  </div>
+</header>
+
+<div class="grid">
+  <section>
+    <div class="card">
+      <div class="card-h"><h2>Patient profile</h2><span class="num">INPUTS</span></div>
+
+      <div class="group">
+        <div class="group-h"><span class="ix">A</span>Quick presets & controls</div>
+        <div class="tools">
+          <button class="tbtn" data-preset="classic">Classic ATTR-wt profile</button>
+          <button class="tbtn" data-preset="older">Older man, HF only</button>
+          <button class="tbtn" data-preset="female">Older woman with AF</button>
+          <button class="tbtn" id="reset">↺ Reset</button>
+          <button class="tbtn" onclick="window.print()">⎙ Print / Save PDF</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="group-h"><span class="ix">B</span>Demographics</div>
+        <div class="row"><label class="lab" for="age">Age</label>
+          <div class="seg-num">
+            <input type="range" id="age" min="18" max="100" value="75" style="width:220px;accent-color:var(--congo)">
+            <input type="number" id="ageNum" min="18" max="100" value="75" aria-label="Age in years">
+            <span style="font-size:12.5px;color:var(--muted)">+2 points per 10 years</span>
+          </div></div>
+        <div class="row"><label class="lab">Sex</label>
+          <div class="seg" id="sex" role="group" aria-label="Sex">
+            <button data-v="M" aria-pressed="true">Male</button><button data-v="F" aria-pressed="false">Female</button>
+          </div>
+          <span style="font-size:12.5px;color:var(--muted)">female −7 points</span></div>
+        <div class="row"><label class="lab" for="race">Race</label>
+          <select id="race">
+            <option value="white">White</option><option value="black">Black</option>
+            <option value="hispanic">Hispanic</option><option value="other">Other</option>
+          </select></div>
+      </div>
+
+      <div class="group"><div class="group-h"><span class="ix">C</span>Cardiac & conduction</div><div class="chips" id="g-cardiac"></div></div>
+      <div class="group"><div class="group-h"><span class="ix">D</span>Haemodynamic, renal & extracardiac</div><div class="chips" id="g-other"></div></div>
+      <div class="group" style="font-size:12.5px;color:var(--muted)">Points come from the fitted multivariable model, so each feature's contribution is already adjusted for age, sex and the other features.</div>
+    </div>
+  </section>
+
+  <aside class="screen" aria-live="polite">
+    <div class="screen-h"><h2>Score readout · ATTR wild-type</h2><span class="live">LIVE</span></div>
+    <div class="sec">
+      <div class="bigrow">
+        <div class="big"><div class="k">Total score</div><div class="v" id="score">0</div><div class="ci" id="scoreci"></div></div>
+        <div class="big"><div class="k">Observed ATTR-wt rate</div><div class="v" id="rate">–</div><div class="ci" id="ratevs"></div></div>
+      </div>
+      <div class="tier" id="band"></div>
+      <div class="bandbar" id="bandbar"><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="bandlab"><span>B1 &lt;12</span><span>B2 12–15.2</span><span>B3 15.2–18.4</span><span>B4 18.4–21.8</span><span>B5 ≥21.8</span></div>
+      <div class="warn" id="warn"></div>
+    </div>
+    <div class="sec">
+      <h3>Race-specific observed rate</h3>
+      <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
+        <span id="raceRate" style="font-family:var(--mono);font-size:22px;font-weight:600;color:#fff">–</span>
+        <span id="raceInfo" style="font-size:12.5px;color:#B8C6CF"></span>
+      </div>
+    </div>
+    <div class="sec">
+      <h3>Contribution breakdown</h3>
+      <div id="drivers"></div>
+    </div>
+    <div class="sec">
+      <h3>Model performance</h3>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;font-family:var(--mono);font-size:12px;color:#D5DFE5">
+        <span>Points AUC <b style="color:#fff">0.789</b></span>
+        <span>Logistic AUC <b style="color:#fff">0.789</b></span>
+        <span>Avg precision <b style="color:#fff">0.0015</b></span>
+      </div>
+    </div>
+    <div class="sec summary">
+      <h3>Summary</h3>
+      <p id="sumtxt"></p>
+      <button class="copybtn" id="copy">Copy summary</button>
+    </div>
+    <div class="disc"><b>For research use only.</b> Derived from NIS administrative diagnosis data and not externally validated. Not clinical decision support.</div>
+  </aside>
+</div>
+
+<div class="lower">
+  <div class="card">
+    <div class="card-h"><h2>Point values</h2><span class="num">MULTIVARIABLE · INTEGER POINTS</span></div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Predictor</th><th class="n">Points</th></tr></thead>
+      <tbody id="ptsbody"></tbody>
+    </table></div>
+    <div style="padding:12px 18px;font-size:12.5px;color:var(--muted)">Score = 2 × (age / 10) − 7 × female + feature points. Age enters as a decimal, so scores need not be whole numbers.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-h"><h2>Observed ATTR-wt rate by score band</h2><span class="num">WEIGHTED</span></div>
+    <div class="chart-wrap"><svg class="chart" id="bandchart" viewBox="0 0 560 290" role="img" aria-label="Observed ATTR wild-type rate by score band"></svg></div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Band</th><th>Score range</th><th class="n">Observed rate</th><th class="n">vs band 1</th></tr></thead>
+      <tbody id="bandbody"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:18px">
+  <div class="card-h"><h2>Race-specific observed rates</h2><span class="num">CRUDE · WEIGHTED</span></div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Race</th><th class="n">Weighted observed ATTR-wt rate</th><th class="n">vs White</th><th class="n">Mean age, years</th></tr></thead>
+    <tbody id="racebody"></tbody>
+  </table></div>
+  <div style="padding:12px 18px;font-size:12.5px;color:var(--muted)">Crude weighted observed rates in the ATTR-wt coding domain. Black patients had twice the White rate despite being about 4 years younger on average, which may reflect hereditary V122I disease coded as wild-type rather than a true difference in wild-type ATTR.</div>
+</div>
+
+<div class="card" style="margin-top:18px">
+  <div class="card-h"><h2>Model performance</h2><span class="num">DISCRIMINATION · CALIBRATION</span></div>
+  <div class="perf">
+    <div class="pf"><div class="k">Points AUC</div><div class="v">0.789</div><div class="s">integer score</div></div>
+    <div class="pf"><div class="k">Logistic AUC</div><div class="v">0.789</div><div class="s">full-precision model</div></div>
+    <div class="pf"><div class="k">Average precision</div><div class="v">0.0015</div><div class="s">≈7× the base rate of 0.022%</div></div>
+    <div class="pf"><div class="k">Brier score</div><div class="v">0.00039</div><div class="s">very low, as expected for a rare outcome</div></div>
+  </div>
+  <div style="padding:0 18px 16px;font-size:12.5px;color:var(--muted)">Rounding to integer points cost no discrimination (0.789 vs 0.789). Average precision is low in absolute terms because ATTR-wt is coded in roughly 1 in 4,500 heart-failure discharges; it is the lift over that base rate that matters.</div>
+</div>
+
+<details class="card notes">
+  <summary>Methods, definitions & limitations</summary>
+  <div class="notes-b">
+    <h4>Cohort and outcome</h4>
+    <p>National Inpatient Sample heart-failure discharges within the ATTR-wt coding domain, meaning discharges from the first quarter in which ICD-10-CM E85.82 is observed (2017 Q4) onward. The outcome is a coded diagnosis of wild-type transthyretin amyloidosis (E85.82).</p>
+    <h4>Model</h4>
+    <p>Integer points were derived from a weighted logistic model after SHAP-guided variable selection with clinician-forced additions. Score features: age, sex, atrial fibrillation/flutter, chronic kidney disease, pacemaker, unspecified hypotension, spinal stenosis, bundle/fascicular block and hypertrophic cardiomyopathy. Score bands are quantile-style groupings of the score with their weighted observed ATTR-wt rates.</p>
+    <h4>Reading the output</h4>
+    <ul>
+      <li>The observed rate is the proportion of discharges in that score band coded with ATTR-wt, not an individual's probability of disease.</li>
+      <li>Scores below 5 are shown in band 1 and scores above 47 in band 5, the ranges observed in the data.</li>
+    </ul>
+    <h4>Limitations</h4>
+    <ul>
+      <li>Administrative codes only: no echocardiography, cardiac MRI, scintigraphy or genotyping. ATTR-wt is under-diagnosed, so observed rates understate true prevalence.</li>
+      <li>Coded hypertrophic cardiomyopathy carries 13 points. This likely reflects infiltrative wall thickening coded as hypertrophic cardiomyopathy before or during the amyloid work-up, and it should not be read as primary hypertrophic cardiomyopathy predicting ATTR-wt.</li>
+      <li>Diagnoses may be coded anywhere in the stay, so some features could be consequences of the work-up rather than antecedents.</li>
+      <li>Not externally validated. For research and demonstration only.</li>
+    </ul>
+  </div>
+</details>
+
+<footer>ATTR wild-type amyloidosis risk score · NIS heart-failure discharges · for research use only.</footer>
+</div>
+
+<script>
+const POINTS = [
+  {k:"af",   l:"Atrial fibrillation/flutter", p:5,  g:"cardiac"},
+  {k:"bbb",  l:"Bundle/fascicular block",      p:4,  g:"cardiac"},
+  {k:"ppm",  l:"Pacemaker",                    p:1,  g:"cardiac"},
+  {k:"hcm",  l:"Hypertrophic cardiomyopathy (coded)", p:13, g:"cardiac"},
+  {k:"ckd",  l:"Chronic kidney disease",       p:4,  g:"other"},
+  {k:"hypo", l:"Hypotension, unspecified",     p:3,  g:"other"},
+  {k:"ss",   l:"Spinal stenosis",              p:5,  g:"other"}
+];
+const BANDS = [
+  {b:1, min:5.0,  max:12.0, rate:0.005570840827225508},
+  {b:2, min:12.0, max:15.2, rate:0.011141747338820694},
+  {b:3, min:15.2, max:18.4, rate:0.013370042296215605},
+  {b:4, min:18.4, max:21.8, rate:0.0479},
+  {b:5, min:21.8, max:47.0, rate:0.1164}
+];
+const BASE = 0.0221;   // % ATTR-wt in the coding-domain cohort
+const COLORS = ["#8FC25A","#C9C04A","#E2B04A","#E07B3C","#E0464F"];
+const LABELS = ["Lowest","Low","Intermediate","High","Highest"];
+const RACE = {
+  black:{label:"Black", rate:0.0429, age:72.8},
+  white:{label:"White", rate:0.0200, age:77.1},
+  other:{label:"Other", rate:0.0156, age:76.2},
+  hispanic:{label:"Hispanic", rate:0.0082, age:75.2}
+};
+const S = {age:75, sex:"M", race:"white", on:new Set()};
+const $ = id=>document.getElementById(id);
+const fmt = x => (Math.round(x*10)/10).toString();
+const fmtRate = r => r<0.01? r.toFixed(4)+"%" : r.toFixed(3)+"%";
+
+function bandOf(score){ for(const B of BANDS){ if(score < B.max) return B; } return BANDS[4]; }
+
+function buildChips(){
+  ["cardiac","other"].forEach(g=>{
+    const box=$("g-"+g); box.innerHTML="";
+    POINTS.filter(x=>x.g===g).forEach(x=>{
+      const b=document.createElement("button");
+      b.className="chip"+(x.k==="ss"?" redflag":"");
+      b.innerHTML=`<span class="t">${x.l}</span><span class="or">+${x.p} pts</span>`;
+      b.setAttribute("aria-pressed",S.on.has(x.k));
+      b.onclick=()=>{ S.on.has(x.k)?S.on.delete(x.k):S.on.add(x.k); b.setAttribute("aria-pressed",S.on.has(x.k)); compute(); };
+      box.appendChild(b);
+    });
+  });
+}
+
+function compute(){
+  const agePts = 2*S.age/10, sexPts = S.sex==="F"?-7:0;
+  const feats = POINTS.filter(x=>S.on.has(x.k));
+  const score = agePts + sexPts + feats.reduce((s,x)=>s+x.p,0);
+  const B = bandOf(score);
+  $("score").textContent = fmt(score);
+  $("scoreci").textContent = `${feats.reduce((s,x)=>s+x.p,0)} from clinical features`;
+  $("rate").textContent = fmtRate(B.rate);
+  $("ratevs").textContent = `×${(B.rate/BASE).toFixed(1)} the cohort rate (${BASE}%)`;
+  $("band").innerHTML = `<i class="dot" style="background:${COLORS[B.b-1]};width:10px;height:10px"></i>Band ${B.b} · ${LABELS[B.b-1]}`;
+  [...$("bandbar").children].forEach((el,i)=>{ el.style.background = i<B.b ? COLORS[B.b-1] : "#22323F"; });
+
+  const w=$("warn");
+  if(score<5){ w.style.display="block"; w.textContent="Score below the lowest observed value (5); shown in band 1."; }
+  else if(score>47){ w.style.display="block"; w.textContent="Score above the highest observed value (47); shown in band 5."; }
+  else if(S.on.has("hcm")){ w.style.display="block"; w.textContent="Coded hypertrophic cardiomyopathy adds 13 points and likely reflects infiltrative wall thickening coded as HCM. Interpret with care."; }
+  else w.style.display="none";
+
+  const items = [{l:`Age ${S.age}`, p:agePts}];
+  if(S.sex==="F") items.push({l:"Female sex", p:sexPts});
+  feats.forEach(x=>items.push({l:x.l, p:x.p}));
+  const mx = Math.max(13, ...items.map(i=>Math.abs(i.p)));
+  $("drivers").innerHTML = items.sort((a,b)=>Math.abs(b.p)-Math.abs(a.p)).map(i=>{
+    const wd = Math.abs(i.p)/mx*50;
+    const style = i.p>=0? `left:50%;width:${wd}%;background:var(--congo)` : `right:50%;width:${wd}%;background:#6FA3D9`;
+    return `<div class="drv-row"><span>${i.l}</span><div class="bar"><span style="${style}"></span></div><span class="dv">${i.p>0?"+":""}${fmt(i.p)}</span></div>`;
+  }).join("");
+
+  const fl = feats.map(x=>x.l.toLowerCase()).join(", ");
+  $("sumtxt").textContent = `${S.age}-year-old ${S.sex==="M"?"man":"woman"}${fl?" with "+fl:", no scored features"}. ATTR-wt point score ${fmt(score)} (band ${B.b} of 5, ${LABELS[B.b-1].toLowerCase()}); observed ATTR-wt rate in this band ${fmtRate(B.rate)}, ×${(B.rate/BASE).toFixed(1)} the cohort rate. Score AUC 0.789. Research use only; NIS-derived, not externally validated.`;
+
+  const rc = RACE[S.race];
+  $("raceRate").textContent = rc.rate.toFixed(4)+"%";
+  $("raceInfo").textContent = `${rc.label} · crude weighted rate · mean age ${rc.age} y`;
+  $("racebody").innerHTML = ["black","white","other","hispanic"].map(k=>{const r=RACE[k];
+    return `<tr class="${k===S.race?"on":""}"><td>${r.label}</td><td class="n">${r.rate.toFixed(4)}%</td><td class="n">×${(r.rate/RACE.white.rate).toFixed(2)}</td><td class="n">${r.age}</td></tr>`;}).join("");
+  // tables
+  const rows = [["Age per 10 years","+2"],["Female sex","−7"]].concat(POINTS.map(x=>[x.l,"+"+x.p, S.on.has(x.k)]));
+  $("ptsbody").innerHTML = rows.map(r=>`<tr class="${r[2]?"on":""}"><td>${r[0]}</td><td class="n">${r[1]}</td></tr>`).join("");
+  $("bandbody").innerHTML = BANDS.map(b=>`<tr class="${b.b===B.b?"on":""}"><td>${b.b} · ${LABELS[b.b-1]}</td><td>${b.min.toFixed(1)} to ${b.max.toFixed(1)}</td><td class="n">${fmtRate(b.rate)}</td><td class="n">×${(b.rate/BANDS[0].rate).toFixed(1)}</td></tr>`).join("");
+  drawChart(B.b);
+}
+
+function drawChart(active){
+  const W=560,H=290,L=58,R=16,T=20,Bm=48, mx=0.13;
+  const bw=(W-L-R)/5;
+  let s="";
+  [0,0.03,0.06,0.09,0.12].forEach(v=>{
+    const y=T+(H-T-Bm)*(1-v/mx);
+    s+=`<line x1="${L}" x2="${W-R}" y1="${y}" y2="${y}" stroke="#E4EAEE"/>`;
+    s+=`<text class="mono" x="${L-8}" y="${y+4}" text-anchor="end">${v.toFixed(2)}%</text>`;
+  });
+  const yb=T+(H-T-Bm)*(1-BASE/mx);
+  BANDS.forEach((b,i)=>{
+    const h=(H-T-Bm)*(b.rate/mx), x=L+i*bw+bw*0.18, w=bw*0.64, y=H-Bm-h;
+    s+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="4" fill="${COLORS[i]}" opacity="${b.b===active?1:0.45}" stroke="${b.b===active?"#13202B":"none"}" stroke-width="1.5"/>`;
+    s+=`<text class="mono" x="${x+w/2}" y="${y-6}" text-anchor="middle">${fmtRate(b.rate)}</text>`;
+    s+=`<text x="${x+w/2}" y="${H-Bm+18}" text-anchor="middle">Band ${b.b}</text>`;
+    s+=`<text class="mono" x="${x+w/2}" y="${H-Bm+33}" text-anchor="middle" style="font-size:10px;fill:#6B7884">${b.min}–${b.max}</text>`;
+  });
+  s+=`<line x1="${L}" x2="${W-R}" y1="${yb}" y2="${yb}" stroke="#A8313D" stroke-dasharray="4 3"/>`;
+  s+=`<text class="mono" x="${L+6}" y="${yb-5}" text-anchor="start" style="fill:#A8313D">cohort average ${BASE}%</text>`;
+  $("bandchart").innerHTML=s;
+}
+
+function setAge(v){ v=Math.max(18,Math.min(100,Math.round(+v||0))); S.age=v; $("age").value=v; $("ageNum").value=v; compute(); }
+$("race").onchange=e=>{ S.race=e.target.value; compute(); };
+$("age").oninput=e=>setAge(e.target.value);
+$("ageNum").onchange=e=>setAge(e.target.value);
+document.querySelectorAll("#sex button").forEach(b=>b.onclick=()=>{
+  S.sex=b.dataset.v; document.querySelectorAll("#sex button").forEach(x=>x.setAttribute("aria-pressed",x===b)); compute();
+});
+const PRESETS={
+  classic:{age:82,sex:"M",on:["af","bbb","ckd","ss"]},
+  older:{age:80,sex:"M",on:[]},
+  female:{age:78,sex:"F",on:["af"]}
+};
+function setAll(p){
+  S.sex=p.sex; S.race="white"; $("race").value="white"; S.on=new Set(p.on);
+  document.querySelectorAll("#sex button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.v===S.sex));
+  buildChips(); setAge(p.age);
+}
+document.querySelectorAll("[data-preset]").forEach(b=>b.onclick=()=>setAll(PRESETS[b.dataset.preset]));
+$("reset").onclick=()=>setAll({age:75,sex:"M",on:[]});
+$("copy").onclick=async()=>{
+  try{ await navigator.clipboard.writeText($("sumtxt").textContent); $("copy").textContent="Copied"; }
+  catch(e){ $("copy").textContent="Select and copy the text above"; }
+  setTimeout(()=>$("copy").textContent="Copy summary",1600);
+};
+buildChips(); compute();
+</script>
+</body>
+</html>
